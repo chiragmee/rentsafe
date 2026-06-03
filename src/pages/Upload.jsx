@@ -112,7 +112,10 @@ export default function Upload() {
       navigate(`/review-parsed?id=${agreement.id}`)
     } catch (err) {
       console.error(err)
-      setError(err.message || 'Something went wrong. Please try again.')
+      const msg = err.message || 'Something went wrong.'
+      setError(msg.includes('parse') || msg.includes('JSON')
+        ? 'Could not read the agreement. Please check the file and try again, or upload a different version.'
+        : msg)
       setLoadingStep(null)
     }
   }

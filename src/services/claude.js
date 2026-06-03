@@ -66,15 +66,28 @@ async function callGemini(parts, maxTokens = 2048) {
 }
 
 function parseJSON(text) {
-  const clean = text.trim()
-    .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
-  try {
-    return JSON.parse(clean)
-  } catch {
-    const match = clean.match(/\{[\s\S]*\}/)
-    if (match) return JSON.parse(match[0])
-    throw new Error('Could not parse JSON from AI response')
+  // Strip markdown code fences anywhere in the response
+  let clean = text.trim()
+    .replace(/```json/gi, '').replace(/```/g, '').trim()
+
+  // Strategy 1: direct parse
+  try { return JSON.parse(clean) } catch {}
+
+  // Strategy 2: find the largest {...} block (greedy — handles trailing text)
+  const matches = [...clean.matchAll(/\{[\s\S]*\}/g)]
+  for (const m of matches.reverse()) {
+    try { return JSON.parse(m[0]) } catch {}
   }
+
+  // Strategy 3: find first { and last } and try everything in between
+  const start = clean.indexOf('{')
+  const end = clean.lastIndexOf('}')
+  if (start !== -1 && end !== -1 && end > start) {
+    try { return JSON.parse(clean.slice(start, end + 1)) } catch {}
+  }
+
+  console.error('Raw Gemini response that failed JSON parse:', text)
+  throw new Error('Could not read the agreement. Please try uploading again.')
 }
 
 // Send PDF directly to Gemini as base64 — no pdfjs-dist needed
@@ -82,15 +95,15 @@ export async function parseAgreementFromPdf(pdfBase64) {
   const text = await callGemini([
     { inlineData: { mimeType: 'application/pdf', data: pdfBase64 } },
     { text: PARSE_PROMPT },
-  ], 2048)
+  ], 4096)
   return parseJSON(text)
 }
 
-// Fallback: parse from extracted text (kept for compatibility)
+// Fallback: parse from extracted text (DOCX or plain text)
 export async function parseAgreement(pdfText) {
   const text = await callGemini(
     [{ text: `${PARSE_PROMPT}\n\nRental agreement text:\n${pdfText}` }],
-    2048
+    4096
   )
   return parseJSON(text)
 }
