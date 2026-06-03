@@ -149,6 +149,40 @@ export async function upsertSettlement(settlement) {
   return data
 }
 
+// ── Utility Settlements ───────────────────────────────────────────────────────
+
+export async function getUtilitySettlement(agreementId) {
+  const { data } = await supabase
+    .from('utility_settlements')
+    .select('*')
+    .eq('agreement_id', agreementId)
+    .single()
+  return data
+}
+
+export async function upsertUtilitySettlement(data) {
+  const { data: row, error } = await supabase
+    .from('utility_settlements')
+    .upsert(data)
+    .select()
+    .single()
+  if (error) throw error
+  return row
+}
+
+// ── Video Upload ──────────────────────────────────────────────────────────────
+
+export async function uploadVideo(file, agreementId) {
+  const ext = file.name?.split('.').pop() || 'mp4'
+  const path = `${agreementId}/walkthrough/walkthrough.${ext}`
+  const { error } = await supabase.storage
+    .from('rentsafe-photos')
+    .upload(path, file, { cacheControl: '3600', upsert: true })
+  if (error) throw error
+  const { data } = supabase.storage.from('rentsafe-photos').getPublicUrl(path)
+  return data.publicUrl
+}
+
 // ── Photo Storage ─────────────────────────────────────────────────────────────
 
 export async function uploadPhoto(file, agreementId, context) {

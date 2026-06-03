@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import { getAgreement, getAssets, insertAssets, deleteAsset, updateAgreement } from '../services/supabase'
+import { track } from '../services/analytics'
 import { BHK_CONFIGS, ROOM_ITEM_TEMPLATES, buildRoomItems, detectBHK } from '../config/roomTemplates'
 
 function templateKey(roomName) {
@@ -95,6 +96,7 @@ export default function BHKSetup() {
         }))
     )
     await insertAssets(toInsert)
+    track('bhk_setup_completed', id, { bhk: selectedBHK })
     navigate(`/registry?id=${id}`)
   }
 

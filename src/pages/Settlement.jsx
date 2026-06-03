@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
-import { getAgreement, getAssets, upsertSettlement } from '../services/supabase'
+import { getAgreement, getAssets, upsertSettlement, getUtilitySettlement, upsertUtilitySettlement } from '../services/supabase'
+import { track } from '../services/analytics'
 import { calculateSettlement } from '../services/depreciation'
 
 function fmt(n) { return `₹${Math.abs(Number(n)).toLocaleString('en-IN')}` }
@@ -16,15 +17,23 @@ export default function Settlement() {
   const [assets, setAssets] = useState([])
   const [settled, setSettled] = useState(false)
   const [settledAt, setSettledAt] = useState(null)
+  const [utilities, setUtilities] = useState({ electricity_due: 0, water_due: 0, maintenance_due: 0, gas_due: 0, other_due: 0 })
   const moveOutDate = new Date().toISOString().split('T')[0]
 
   useEffect(() => {
     if (!id) return
-    Promise.all([getAgreement(id), getAssets(id)]).then(([ag, items]) => {
+    Promise.all([getAgreement(id), getAssets(id), getUtilitySettlement(id)]).then(([ag, items, util]) => {
       setAgreement(ag)
       setAssets(items)
+      if (util) setUtilities(util)
+      track('settlement_generated', id)
     })
   }, [id])
+
+  async function saveUtilities(updated) {
+    setUtilities(updated)
+    await upsertUtilitySettlement({ agreement_id: id, ...updated })
+  }
 
   if (!agreement) return (
     <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -34,7 +43,8 @@ export default function Settlement() {
 
   const settlement = calculateSettlement({ assets, agreement, moveOutDate })
   const paintingCharge = agreement.painting_charges_agreed ? (agreement.painting_charges_amount ?? agreement.monthly_rent ?? 0) : 0
-  const totalDeductions = settlement.last_month_rent_deducted + paintingCharge + settlement.total_damage_charges
+  const totalUtilities = Object.values(utilities).filter(v => typeof v === 'number').reduce((s, v) => s + (v || 0), 0)
+  const totalDeductions = settlement.last_month_rent_deducted + paintingCharge + settlement.total_damage_charges + totalUtilities
   const refundable = Math.max(0, settlement.total_deposit - totalDeductions)
   const owedByTenant = Math.max(0, totalDeductions - settlement.total_deposit)
 
@@ -53,6 +63,7 @@ export default function Settlement() {
     })
     setSettled(true)
     setSettledAt(now)
+    track('settlement_completed', id)
   }
 
   function handleDownloadPdf() {
@@ -110,6 +121,14 @@ export default function Settlement() {
                   </div>
                 )}
 
+                {totalUtilities > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500 flex items-center gap-1">
+                      <span className="text-[#E05252]">└</span> Utility Dues
+                    </span>
+                    <span className="mono-amount font-semibold text-[#E05252]">−{fmt(totalUtilities)}</span>
+                  </div>
+                )}
                 {settlement.line_items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-500 flex items-center gap-1">
@@ -137,7 +156,41 @@ export default function Settlement() {
           </div>
         </div>
 
-        {settlement.line_items.length === 0 && paintingCharge === 0 && (
+        {/* Utility Settlement */}
+        <div className="card mb-6">
+          <p className="section-label mb-4">Utility Dues at Move-Out</p>
+          <p className="text-xs text-gray-400 mb-3">Enter any outstanding utility bills to be deducted from the deposit.</p>
+          <div className="space-y-2">
+            {[
+              { key: 'electricity_due', label: 'Electricity' },
+              { key: 'water_due', label: 'Water' },
+              { key: 'maintenance_due', label: 'Maintenance / Society' },
+              { key: 'gas_due', label: 'Gas' },
+              { key: 'other_due', label: 'Other' },
+            ].map(({ key, label }) => (
+              <div key={key} className="flex items-center gap-3">
+                <span className="text-sm text-gray-600 w-36 flex-shrink-0">{label}</span>
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
+                  <input type="number" min={0}
+                    className="input-field pl-7 py-2 text-sm"
+                    value={utilities[key] || ''}
+                    placeholder="0"
+                    onChange={e => saveUtilities({ ...utilities, [key]: +e.target.value || 0 })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+          {totalUtilities > 0 && (
+            <div className="flex justify-between mt-3 pt-3 border-t border-gray-100 text-sm font-semibold">
+              <span>Total Utility Deductions</span>
+              <span className="text-[#E05252] mono-amount">−{fmt(totalUtilities)}</span>
+            </div>
+          )}
+        </div>
+
+        {settlement.line_items.length === 0 && paintingCharge === 0 && totalUtilities === 0 && (
           <div className="card border-[#2E9E6B]/30 bg-[#2E9E6B]/5 text-center py-6 mb-6">
             <div className="text-3xl mb-2">✓</div>
             <p className="font-semibold text-[#2E9E6B]">No damage deductions</p>

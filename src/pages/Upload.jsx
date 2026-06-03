@@ -4,6 +4,7 @@ import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import { parseAgreementFromPdf } from '../services/claude'
 import { createAgreement, insertAssets } from '../services/supabase'
+import { track } from '../services/analytics'
 
 const LOADING_STEPS = [
   'Reading your agreement…',
@@ -49,8 +50,10 @@ export default function Upload() {
       setLoadingStep(0)
       const pdfBase64 = await readFileAsBase64(file)
 
+      track('agreement_uploaded')
       setLoadingStep(1)
       const parsed = await parseAgreementFromPdf(pdfBase64)
+      track('agreement_parsed')
 
       setLoadingStep(2)
       const agreement = await createAgreement({

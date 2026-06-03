@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import PhotoGrid from '../components/PhotoGrid'
-import { getAgreement, getAssets, upsertAsset, upsertSignature, uploadPhoto } from '../services/supabase'
+import { getAgreement, getAssets, upsertAsset, updateAgreement, uploadVideo } from '../services/supabase'
+import { track } from '../services/analytics'
+import { downloadProtectionReport } from '../services/generatePdf'
 
 const CONDITIONS = ['Good', 'Damaged', 'Missing']
 
@@ -132,23 +134,46 @@ export default function Registry() {
   const navigate = useNavigate()
   const [agreement, setAgreement] = useState(null)
   const [assets, setAssets] = useState([])
-  const [sending, setSending] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [videoUploading, setVideoUploading] = useState(false)
+  const [videoUrl, setVideoUrl] = useState(null)
+  const videoRef = useRef(null)
 
   useEffect(() => {
     if (!id) return
     Promise.all([getAgreement(id), getAssets(id)]).then(([ag, items]) => {
       setAgreement(ag)
-      // If no room_name on assets → redirect to BHK setup
+      setVideoUrl(ag.walkthrough_video_url ?? null)
       if (items.length === 0 || items.every(a => !a.room_name)) {
         navigate(`/bhk-setup?id=${id}`)
         return
       }
       setAssets(items)
+      track('registry_started', id)
     })
   }, [id])
 
   function updateAsset(updated) {
     setAssets(prev => prev.map(a => a.id === updated.id ? updated : a))
+  }
+
+  async function handleVideoUpload(file) {
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) { alert('Video must be under 50MB'); return }
+    setVideoUploading(true)
+    try {
+      const url = await uploadVideo(file, id)
+      await updateAgreement(id, {
+        walkthrough_video_url: url,
+        walkthrough_video_uploaded_at: new Date().toISOString(),
+      })
+      setVideoUrl(url)
+      track('walkthrough_uploaded', id)
+    } catch (e) {
+      alert('Upload failed: ' + e.message)
+    } finally {
+      setVideoUploading(false)
+    }
   }
 
   // Group assets by room
@@ -164,15 +189,9 @@ export default function Registry() {
 
   async function handleSend() {
     setSaving(true)
-    await upsertSignature({
-      agreement_id: id,
-      registry_status: 'Pending Owner',
-      owner_notified_at: new Date().toISOString(),
-    })
-    navigate(`/sign?id=${id}`)
+    track('registry_completed', id, { total_items: totalDone })
+    navigate(`/protection-score?id=${id}`)
   }
-
-  const [saving2, setSaving] = useState(false)
 
   if (!agreement) return (
     <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -205,18 +224,59 @@ export default function Registry() {
           ))}
         </div>
 
-        <div className="mt-8 p-4 border border-gray-200 rounded bg-white">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-gray-500">
-              {totalDone}/{totalRequired} items complete
-            </p>
-            {!canSend && (
-              <p className="text-xs text-gray-400">Document all Tier 1 & 2 items to continue</p>
-            )}
+        {/* Walkthrough Video */}
+        <div className="card mt-6 border-[#6366f1]/20 bg-[#6366f1]/5">
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-8 h-8 rounded bg-[#6366f1]/10 flex items-center justify-center flex-shrink-0 text-[#6366f1]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-sm text-ink">Walkthrough Video <span className="text-xs text-gray-400 font-normal">(optional · +20 pts)</span></p>
+              <p className="text-xs text-gray-500 mt-0.5">Record a 30–90 second walkthrough of the entire flat. Narrate any visible issues. Adds 20 points to your Protection Score.</p>
+            </div>
           </div>
-          <button onClick={handleSend} disabled={!canSend || sending}
+
+          {videoUrl ? (
+            <div className="flex items-center gap-2 p-2.5 bg-[#2E9E6B]/10 border border-[#2E9E6B]/30 rounded text-sm">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E9E6B" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
+              <span className="text-[#2E9E6B] font-semibold">Video uploaded</span>
+              <button onClick={() => { setVideoUrl(null); updateAgreement(id, { walkthrough_video_url: null }) }}
+                className="ml-auto text-xs text-gray-400 hover:text-[#E05252]">Remove</button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <button onClick={() => { videoRef.current.capture = 'environment'; videoRef.current?.click() }}
+                disabled={videoUploading}
+                className="btn-ghost text-xs border border-gray-200 gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="3" /><path d="M20 20H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2z" />
+                </svg>
+                {videoUploading ? 'Uploading…' : 'Record Video'}
+              </button>
+              <button onClick={() => { videoRef.current.removeAttribute('capture'); videoRef.current?.click() }}
+                disabled={videoUploading}
+                className="btn-ghost text-xs border border-gray-200 gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload Video
+              </button>
+            </div>
+          )}
+          <input ref={videoRef} type="file" accept="video/mp4,video/mov,video/webm,video/*"
+            className="hidden" onChange={e => handleVideoUpload(e.target.files[0])} />
+        </div>
+
+        <div className="mt-6 p-4 border border-gray-200 rounded bg-white">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm text-gray-500">{totalDone}/{totalRequired} items documented</p>
+            {!canSend && <p className="text-xs text-gray-400">Set condition on all items to continue</p>}
+          </div>
+          <button onClick={handleSend} disabled={!canSend || saving}
             className={`btn-primary w-full justify-center py-3 ${!canSend ? 'opacity-50 cursor-not-allowed' : ''}`}>
-            {sending ? 'Sending…' : 'Send to Owner →'}
+            {saving ? 'Calculating…' : 'View Protection Score →'}
           </button>
         </div>
       </div>

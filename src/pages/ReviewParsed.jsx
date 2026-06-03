@@ -4,6 +4,7 @@ import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import ComplianceBanner from '../components/ComplianceBanner'
 import { getAgreement, getAssets, updateAgreement, upsertAsset, deleteAsset } from '../services/supabase'
+import { track } from '../services/analytics'
 import { checkCompliance } from '../services/compliance'
 import { DEPRECIATION_RATES } from '../services/depreciation'
 
@@ -46,6 +47,7 @@ export default function ReviewParsed() {
   async function save() {
     setSaving(true)
     await updateAgreement(id, agreement)
+    track('review_completed', id)
     navigate(`/bhk-setup?id=${id}`)
   }
 

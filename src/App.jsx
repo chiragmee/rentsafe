@@ -12,6 +12,8 @@ import Dashboard from './pages/Dashboard'
 import MoveOut from './pages/MoveOut'
 import Settlement from './pages/Settlement'
 import MyAgreements from './pages/MyAgreements'
+import ProtectionScore from './pages/ProtectionScore'
+import AdminAnalytics from './pages/AdminAnalytics'
 import './index.css'
 
 export default function App() {
@@ -31,6 +33,8 @@ export default function App() {
           <Route path="/moveout" element={<MoveOut />} />
           <Route path="/settlement" element={<Settlement />} />
           <Route path="/my-agreements" element={<MyAgreements />} />
+          <Route path="/protection-score" element={<ProtectionScore />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
