@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
-import { parseAgreementFromPdf } from '../services/claude'
+import { parseAgreementFromPdf, parseAgreement } from '../services/claude'
 import { createAgreement, insertAssets } from '../services/supabase'
 import { track } from '../services/analytics'
 
@@ -13,19 +13,33 @@ const LOADING_STEPS = [
   'Almost done…',
 ]
 
-// Read file as base64 string — works on every browser including old mobile
+const ACCEPTED_TYPES = {
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/msword': 'docx',
+}
+
+// PDF → base64 for Gemini inline
 function readFileAsBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
-      // e.target.result is "data:application/pdf;base64,XXXX"
-      // Gemini needs just the base64 part after the comma
-      const base64 = e.target.result.split(',')[1]
-      resolve(base64)
-    }
+    reader.onload = (e) => resolve(e.target.result.split(',')[1])
     reader.onerror = () => reject(new Error('Could not read file'))
     reader.readAsDataURL(file)
   })
+}
+
+// DOCX → plain text using mammoth
+async function extractDocxText(file) {
+  const mammoth = await import('mammoth')
+  const arrayBuffer = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.readAsArrayBuffer(file)
+  })
+  const result = await mammoth.extractRawText({ arrayBuffer })
+  return result.value
 }
 
 export default function Upload() {
@@ -36,8 +50,8 @@ export default function Upload() {
   const [error, setError] = useState('')
 
   async function processFile(file) {
-    if (!file || file.type !== 'application/pdf') {
-      setError('Please upload a PDF file.')
+    if (!file || !ACCEPTED_TYPES[file.type]) {
+      setError('Please upload a PDF or Word (.docx) file.')
       return
     }
     if (file.size > 20 * 1024 * 1024) {
@@ -48,11 +62,19 @@ export default function Upload() {
 
     try {
       setLoadingStep(0)
-      const pdfBase64 = await readFileAsBase64(file)
+      const fileType = ACCEPTED_TYPES[file.type]
 
       track('agreement_uploaded')
       setLoadingStep(1)
-      const parsed = await parseAgreementFromPdf(pdfBase64)
+
+      let parsed
+      if (fileType === 'pdf') {
+        const pdfBase64 = await readFileAsBase64(file)
+        parsed = await parseAgreementFromPdf(pdfBase64)
+      } else {
+        const text = await extractDocxText(file)
+        parsed = await parseAgreement(text)
+      }
       track('agreement_parsed')
 
       setLoadingStep(2)
@@ -169,7 +191,7 @@ export default function Upload() {
                     <line x1="3" y1="9" x2="21" y2="9" />
                     <line x1="9" y1="21" x2="9" y2="9" />
                   </svg>
-                  PDF only (Max 20MB)
+                  PDF or Word (.docx) · Max 20MB
                 </p>
               </>
             )}
@@ -178,7 +200,7 @@ export default function Upload() {
           <input
             ref={inputRef}
             type="file"
-            accept=".pdf"
+            accept=".pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="hidden"
             onChange={(e) => processFile(e.target.files[0])}
           />
