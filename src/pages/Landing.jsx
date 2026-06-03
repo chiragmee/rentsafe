@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
 import TopAppBar from '../components/TopAppBar'
 import AuthModal from '../components/AuthModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -64,6 +65,109 @@ function StepCard({ number, title, description, icon }) {
         <h3 className="font-display text-xl font-semibold text-navy mb-2">{title}</h3>
         <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
       </div>
+    </div>
+  )
+}
+
+function FairDeductionSimulator({ onProtect }) {
+  const [deposit, setDeposit] = useState('')
+  const [rent, setRent] = useState('')
+  const [damagedItems, setDamagedItems] = useState(0)
+  const [missingItems, setMissingItems] = useState(0)
+  const [ownerClaim, setOwnerClaim] = useState('')
+  const [months, setMonths] = useState(11)
+
+  const dep = +deposit || 0
+  const mo = +rent || 0
+
+  // Fair deduction calculation using standard depreciation
+  const depreciationFactor = Math.max(0.3, 1 - (months / 12) * 0.15) // 15%/yr depreciation
+  const fairDamage = Math.round(damagedItems * 3000 * depreciationFactor)
+  const fairMissing = Math.round(missingItems * 2500)
+  const fairDeduction = mo + fairDamage + fairMissing
+  const fairRefund = Math.max(0, dep - fairDeduction)
+  const claim = +ownerClaim || 0
+  const excess = claim > fairDeduction ? claim - fairDeduction : 0
+  const hasResult = dep > 0 && mo > 0
+
+  return (
+    <div className="max-w-2xl mx-auto card border-navy/10">
+      <div className="grid sm:grid-cols-2 gap-4 mb-6">
+        {[
+          { label: 'Security Deposit (₹)', value: deposit, setter: setDeposit, placeholder: '50000' },
+          { label: 'Monthly Rent (₹)', value: rent, setter: setRent, placeholder: '13000' },
+        ].map(({ label, value, setter, placeholder }) => (
+          <div key={label}>
+            <label className="text-xs text-gray-500 mb-1.5 block">{label}</label>
+            <input type="number" className="input-field" placeholder={placeholder}
+              value={value} onChange={e => setter(e.target.value)} />
+          </div>
+        ))}
+        <div>
+          <label className="text-xs text-gray-500 mb-1.5 block">Tenancy Duration (months)</label>
+          <input type="number" min={1} max={60} className="input-field" value={months}
+            onChange={e => setMonths(+e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 mb-1.5 block">What Owner is Claiming (₹)</label>
+          <input type="number" className="input-field" placeholder="e.g. 25000"
+            value={ownerClaim} onChange={e => setOwnerClaim(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 mb-1.5 block">Damaged Items (count)</label>
+          <input type="number" min={0} max={20} className="input-field" value={damagedItems}
+            onChange={e => setDamagedItems(+e.target.value)} />
+        </div>
+        <div>
+          <label className="text-xs text-gray-500 mb-1.5 block">Missing Items (count)</label>
+          <input type="number" min={0} max={20} className="input-field" value={missingItems}
+            onChange={e => setMissingItems(+e.target.value)} />
+        </div>
+      </div>
+
+      {hasResult ? (
+        <div className="border-t border-gray-100 pt-5">
+          <div className="grid sm:grid-cols-3 gap-4 mb-5">
+            <div className="text-center p-4 bg-[#2E9E6B]/8 border border-[#2E9E6B]/20 rounded">
+              <p className="text-xs text-gray-500 mb-1">Fair Deduction</p>
+              <p className="font-display font-bold text-xl text-[#2E9E6B]">
+                ₹{fairDeduction.toLocaleString('en-IN')}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Last rent + damage (depreciated)</p>
+            </div>
+            <div className="text-center p-4 bg-[#2E9E6B]/8 border border-[#2E9E6B]/20 rounded">
+              <p className="text-xs text-gray-500 mb-1">You Should Get Back</p>
+              <p className="font-display font-bold text-xl text-[#2E9E6B]">
+                ₹{fairRefund.toLocaleString('en-IN')}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Based on fair calculation</p>
+            </div>
+            {claim > 0 && (
+              <div className={`text-center p-4 rounded border ${excess > 0 ? 'bg-[#E05252]/8 border-[#E05252]/20' : 'bg-gray-50 border-gray-200'}`}>
+                <p className="text-xs text-gray-500 mb-1">Potential Excess Deduction</p>
+                <p className={`font-display font-bold text-xl ${excess > 0 ? 'text-[#E05252]' : 'text-[#2E9E6B]'}`}>
+                  {excess > 0 ? `₹${excess.toLocaleString('en-IN')}` : 'None'}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {excess > 0 ? 'Owner may be overcharging' : 'Owner claim looks fair'}
+                </p>
+              </div>
+            )}
+          </div>
+          {excess > 0 && (
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-3">
+                Protect yourself with documented evidence — dispute this with proof.
+              </p>
+              <button onClick={onProtect} className="btn-primary px-6 py-2.5 mx-auto">
+                Protect My Deposit →
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 text-center pt-2">Enter deposit and rent to see your calculation.</p>
+      )}
     </div>
   )
 }
@@ -172,6 +276,17 @@ export default function Landing() {
               }
             />
           </div>
+        </div>
+      </section>
+
+      {/* Fair Deduction Simulator */}
+      <section className="border-t border-gray-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-3xl font-semibold text-navy mb-3">Is your owner deducting too much?</h2>
+            <p className="text-gray-500">Enter the numbers — find out what's fair in 30 seconds. No login required.</p>
+          </div>
+          <FairDeductionSimulator onProtect={handleTenantClick} />
         </div>
       </section>
 
