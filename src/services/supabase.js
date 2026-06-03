@@ -8,13 +8,26 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // ── Agreements ──────────────────────────────────────────────────────────────
 
 export async function createAgreement(data) {
+  const { data: { user } } = await supabase.auth.getUser()
   const { data: row, error } = await supabase
     .from('agreements')
-    .insert(data)
+    .insert({ ...data, user_id: user?.id ?? null })
     .select()
     .single()
   if (error) throw error
   return row
+}
+
+export async function getMyAgreements() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase
+    .from('agreements')
+    .select('id, tenant_name, owner_name, property_address, monthly_rent, deposit_amount, tenure_start_date, tenure_months, parsed_at')
+    .eq('user_id', user.id)
+    .order('parsed_at', { ascending: false })
+  if (error) throw error
+  return data
 }
 
 export async function getAgreement(id) {

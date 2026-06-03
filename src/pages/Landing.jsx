@@ -1,5 +1,8 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
+import AuthModal from '../components/AuthModal'
+import { useAuth } from '../contexts/AuthContext'
 
 function ShieldCheckIcon({ size = 24 }) {
   return (
@@ -67,8 +70,31 @@ function StepCard({ number, title, description, icon }) {
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [authModal, setAuthModal] = useState(null) // null | { role, redirectTo }
+
+  function handleTenantClick() {
+    if (user) { navigate('/upload'); return }
+    setAuthModal({ role: 'tenant', redirectTo: `${window.location.origin}/upload` })
+  }
+
+  function handleOwnerClick() {
+    if (user) { navigate('/owner-review/enter'); return }
+    setAuthModal({ role: 'owner', redirectTo: `${window.location.origin}/owner-review/enter` })
+  }
+
   return (
     <div className="min-h-screen bg-paper flex flex-col">
+      {authModal && (
+        <AuthModal
+          role={authModal.role}
+          redirectTo={authModal.redirectTo}
+          onClose={() => {
+            setAuthModal(null)
+            navigate(authModal.role === 'owner' ? '/owner-review/enter' : '/upload')
+          }}
+        />
+      )}
       <TopAppBar />
 
       {/* Hero */}
@@ -82,14 +108,14 @@ export default function Landing() {
               Upload your rent agreement. Document every item. Never lose your deposit unfairly again.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
-              <button onClick={() => navigate('/upload')} className="btn-primary text-base px-6 py-3">
+              <button onClick={handleTenantClick} className="btn-primary text-base px-6 py-3">
                 Start as Tenant
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </button>
-              <button onClick={() => navigate('/owner-review/enter')} className="btn-secondary text-base px-6 py-3">
+              <button onClick={handleOwnerClick} className="btn-secondary text-base px-6 py-3">
                 I'm an Owner — Review & Sign
               </button>
             </div>
