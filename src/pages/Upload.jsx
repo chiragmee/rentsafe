@@ -2,8 +2,9 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
-import { parseAgreement } from '../services/claude'
+import { parseAgreementFromPdf } from '../services/claude'
 import { createAgreement, insertAssets } from '../services/supabase'
+
 const LOADING_STEPS = [
   'Reading your agreement…',
   'Checking for compliance issues…',
@@ -11,30 +12,19 @@ const LOADING_STEPS = [
   'Almost done…',
 ]
 
-// FileReader-based buffer — works on all mobile browsers including old iOS/Android
-function readFileAsArrayBuffer(file) {
+// Read file as base64 string — works on every browser including old mobile
+function readFileAsBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target.result)
+    reader.onload = (e) => {
+      // e.target.result is "data:application/pdf;base64,XXXX"
+      // Gemini needs just the base64 part after the comma
+      const base64 = e.target.result.split(',')[1]
+      resolve(base64)
+    }
     reader.onerror = () => reject(new Error('Could not read file'))
-    reader.readAsArrayBuffer(file)
+    reader.readAsDataURL(file)
   })
-}
-
-async function extractTextFromPdf(file) {
-  const pdfjsLib = await import('pdfjs-dist')
-  // Disable Web Worker entirely — runs in main thread, works on all mobile browsers
-  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
-
-  const arrayBuffer = await readFileAsArrayBuffer(file)
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
-  const pages = []
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i)
-    const content = await page.getTextContent()
-    pages.push(content.items.map((item) => item.str).join(' '))
-  }
-  return pages.join('\n')
 }
 
 export default function Upload() {
@@ -57,10 +47,10 @@ export default function Upload() {
 
     try {
       setLoadingStep(0)
-      const text = await extractTextFromPdf(file)
+      const pdfBase64 = await readFileAsBase64(file)
 
       setLoadingStep(1)
-      const parsed = await parseAgreement(text)
+      const parsed = await parseAgreementFromPdf(pdfBase64)
 
       setLoadingStep(2)
       const agreement = await createAgreement({
@@ -77,7 +67,7 @@ export default function Upload() {
         rent_escalation_percent: parsed.rent_escalation_percent,
         escalation_trigger: parsed.escalation_trigger,
         notice_period_days: parsed.notice_period_days,
-        raw_agreement_text: text,
+        raw_agreement_text: '',
       })
 
       if (parsed.items?.length) {
@@ -94,7 +84,6 @@ export default function Upload() {
 
       setLoadingStep(3)
       await new Promise((r) => setTimeout(r, 400))
-
       navigate(`/review-parsed?id=${agreement.id}`)
     } catch (err) {
       console.error(err)
@@ -106,8 +95,7 @@ export default function Upload() {
   function handleDrop(e) {
     e.preventDefault()
     setDragging(false)
-    const file = e.dataTransfer.files[0]
-    processFile(file)
+    processFile(e.dataTransfer.files[0])
   }
 
   const isLoading = loadingStep !== null
