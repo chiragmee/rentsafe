@@ -127,7 +127,7 @@ function FairDeductionSimulator({ onProtect }) {
 
       {hasResult ? (
         <div className="border-t border-gray-100 pt-5">
-          <div className="grid sm:grid-cols-3 gap-4 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
             <div className="text-center p-4 bg-[#2E9E6B]/8 border border-[#2E9E6B]/20 rounded">
               <p className="text-xs text-gray-500 mb-1">Fair Deduction</p>
               <p className="font-display font-bold text-xl text-[#2E9E6B]">
@@ -205,7 +205,7 @@ export default function Landing() {
       <section className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <h1 className="font-display text-4xl md:text-5xl font-bold text-navy leading-tight mb-4">
+            <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-navy leading-tight mb-4">
               Your deposit.<br />Protected by proof.
             </h1>
             <p className="text-lg text-gray-500 mb-8 leading-relaxed">

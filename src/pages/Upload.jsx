@@ -141,14 +141,16 @@ export default function Upload() {
           </p>
         </div>
 
-        <div className="card p-2 relative">
-          <div className="absolute top-4 right-4">
+        <div className="card p-4">
+          {/* Encrypted badge — top right, no absolute overlap */}
+          <div className="flex justify-end mb-3">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-[#2E9E6B] border border-[#2E9E6B]/30 bg-[#2E9E6B]/8 px-2.5 py-1 rounded">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <rect x="3" y="11" width="18" height="11" rx="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              END-TO-END ENCRYPTED
+              <span className="hidden sm:inline">END-TO-END ENCRYPTED</span>
+              <span className="sm:hidden">Encrypted</span>
             </span>
           </div>
 
@@ -157,7 +159,7 @@ export default function Upload() {
             onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
             onClick={() => !isLoading && inputRef.current?.click()}
-            className={`border-2 border-dashed rounded transition-colors cursor-pointer m-4 p-12 flex flex-col items-center gap-4
+            className={`border-2 border-dashed rounded transition-colors cursor-pointer p-8 sm:p-12 flex flex-col items-center gap-4
               ${dragging ? 'border-navy bg-navy/5' : 'border-gray-300 hover:border-navy hover:bg-gray-50'}
               ${isLoading ? 'pointer-events-none opacity-60' : ''}
             `}
