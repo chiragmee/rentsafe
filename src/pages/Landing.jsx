@@ -239,7 +239,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 md:py-20">
           <div className="text-center mb-12">
             <h2 className="font-display text-3xl font-semibold text-navy mb-3">How it works</h2>
-            <p className="text-gray-500">The Guardian Protocol ensures transparency in three simple steps.</p>
+            <p className="text-gray-500">Three simple steps to protect your deposit before disputes happen.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <StepCard
@@ -295,7 +295,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <p className="font-display text-gold font-semibold text-lg mb-1">RentSafe</p>
-            <p className="text-gray-400 text-xs">© 2024 RentSafe Guardian Protocol. All rights reserved.</p>
+            <p className="text-gray-400 text-xs">© 2024 RentSafe. All rights reserved.</p>
             <p className="text-gray-400 text-xs mt-1">Free to use. No account required.</p>
           </div>
           <div className="flex gap-6 text-sm text-gray-400">

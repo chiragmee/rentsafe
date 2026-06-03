@@ -137,7 +137,7 @@ export default function Upload() {
         <div className="text-center mb-8">
           <h1 className="page-title mb-2">Upload Your Rent Agreement</h1>
           <p className="page-subtitle">
-            We'll read your agreement and pull out the important details automatically using the Guardian Protocol.
+            We'll read your agreement and pull out the important details automatically.
           </p>
         </div>
 
@@ -248,7 +248,7 @@ export default function Upload() {
             <a href="#" className="hover:text-white">Trust & Safety</a>
             <a href="#" className="hover:text-white">Audit Logs</a>
           </div>
-          <p className="text-xs text-gray-500">© 2024 RentSafe Guardian Protocol. All rights reserved.</p>
+          <p className="text-xs text-gray-500">© 2024 RentSafe. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -52,11 +52,9 @@ export default function TopAppBar({ agreementId }) {
               </button>
             </>
           ) : (
-            <button className="btn-primary text-xs px-2.5 py-1.5 gap-1">
-              <ShieldIcon size={14} />
-              {/* Full label on sm+, icon-only on xs */}
-              <span className="hidden sm:inline">Guardian Protocol</span>
-            </button>
+            <Link to="/upload" className="btn-primary text-xs px-3 py-1.5 whitespace-nowrap">
+              Protect My Deposit
+            </Link>
           )}
         </div>
 

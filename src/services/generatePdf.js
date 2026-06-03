@@ -77,7 +77,7 @@ export async function downloadProtectionReport(agreementId, scoreData) {
   <!-- Cover Page -->
   <div class="cover">
     <div class="logo">Rent<span>Safe</span></div>
-    <p style="font-size:11px;color:#6b7280;margin:4px 0 16px">Deposit Protection Report · Guardian Protocol</p>
+    <p style="font-size:11px;color:#6b7280;margin:4px 0 16px">Deposit Protection Report</p>
     <h1>${agreement.property_address ?? 'Property'}</h1>
     <p style="color:#6b7280;margin-top:6px">${agreement.tenant_name} · ${agreement.owner_name}</p>
     <div class="score-circle">
@@ -143,7 +143,7 @@ export async function downloadProtectionReport(agreementId, scoreData) {
   <p style="font-size:13px">Walkthrough Video: <a href="${agreement.walkthrough_video_url}">${agreement.walkthrough_video_url}</a></p>` : ''}
 
   <div class="footer">
-    <span>RentSafe Guardian Protocol · rentsafe-two.vercel.app</span>
+    <span>RentSafe · rentsafe-two.vercel.app</span>
     <span>Report generated ${fmtDate(new Date().toISOString())} · Agreement ${agreementId.slice(0,8)}</span>
   </div>
 
@@ -261,7 +261,7 @@ export async function downloadRegistryPdf(agreementId) {
   <div class="header">
     <div>
       <div class="logo">Rent<span>Safe</span></div>
-      <p style="font-size:11px;color:#6b7280;margin-top:2px;">Guardian Protocol — Asset Registry</p>
+      <p style="font-size:11px;color:#6b7280;margin-top:2px;">Signed Asset Registry</p>
     </div>
     <div style="text-align:right">
       <span class="badge ${isGhostRule ? 'badge-pending' : 'badge-locked'}">
@@ -342,7 +342,7 @@ export async function downloadRegistryPdf(agreementId) {
   </div>
 
   <div class="footer">
-    <span>RentSafe Guardian Protocol · rentsafe.app</span>
+    <span>RentSafe · rentsafe-two.vercel.app</span>
     <span>Generated ${fmtDate(new Date().toISOString())} · Agreement ID: ${agreementId}</span>
   </div>
 

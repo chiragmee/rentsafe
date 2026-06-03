@@ -299,7 +299,7 @@ function buildSettlementHtml({ agreement, settlement, paintingCharge, refundable
   </div>
 
   <div class="footer">
-    <span>RentSafe Guardian Protocol · rentsafe.app</span>
+    <span>RentSafe · rentsafe-two.vercel.app</span>
     <span>Generated ${fmtD(new Date().toISOString())}</span>
   </div>
 
