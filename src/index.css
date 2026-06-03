@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'DM Sans', Inter, sans-serif;
+    background-color: #FBF9F6;
+    color: #1A1A1A;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Literata', Georgia, serif;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white border border-gray-200 rounded p-5;
+  }
+
+  .btn-primary {
+    @apply bg-gold text-navy font-semibold px-5 py-2.5 rounded text-sm transition-all hover:brightness-95 active:brightness-90 inline-flex items-center gap-2 cursor-pointer;
+  }
+
+  .btn-secondary {
+    @apply border border-navy text-navy font-semibold px-5 py-2.5 rounded text-sm transition-all hover:bg-navy hover:text-white inline-flex items-center gap-2 cursor-pointer bg-transparent;
+  }
+
+  .btn-ghost {
+    @apply text-navy font-medium px-4 py-2 rounded text-sm transition-all hover:bg-black/5 inline-flex items-center gap-2 cursor-pointer bg-transparent border-none;
+  }
+
+  .btn-danger {
+    @apply bg-red-dispute text-white font-semibold px-5 py-2.5 rounded text-sm transition-all hover:brightness-95 inline-flex items-center gap-2 cursor-pointer;
+  }
+
+  .input-field {
+    @apply w-full border border-gray-200 rounded px-3 py-2.5 text-sm font-sans text-ink bg-white focus:outline-none focus:border-navy transition-colors placeholder:text-gray-400;
+  }
+
+  .badge-tier1 {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-gold/15 text-yellow-700 border border-gold/30;
+  }
+
+  .badge-tier2 {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-navy/10 text-navy border border-navy/20;
+  }
+
+  .badge-tier3 {
+    @apply inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200;
+  }
+
+  .status-locked {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded bg-[#2E9E6B]/10 text-[#2E9E6B] border border-[#2E9E6B]/30 uppercase tracking-wide;
+  }
+
+  .status-pending {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded bg-[#E8A020]/10 text-[#E8A020] border border-[#E8A020]/30 uppercase tracking-wide;
+  }
+
+  .status-draft {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase tracking-wide;
+  }
+
+  .status-dispute {
+    @apply inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded bg-[#E05252]/10 text-[#E05252] border border-[#E05252]/20 uppercase tracking-wide;
+  }
+
+  .compliance-banner {
+    @apply w-full rounded p-4 flex gap-3 items-start;
+    border: 1px solid rgba(224, 82, 82, 0.3);
+    background-color: rgba(224, 82, 82, 0.06);
+  }
+
+  .amber-banner {
+    @apply w-full rounded p-4 flex gap-3 items-start;
+    border: 1px solid rgba(232, 160, 32, 0.3);
+    background-color: rgba(232, 160, 32, 0.06);
+  }
+
+  .section-label {
+    @apply text-xs font-semibold tracking-widest text-gray-400 uppercase;
+  }
+
+  .page-title {
+    @apply text-3xl font-display font-semibold text-navy leading-tight;
+  }
+
+  .page-subtitle {
+    @apply text-base text-gray-500 leading-relaxed;
+  }
+
+  .mono-amount {
+    @apply font-mono font-semibold tabular-nums;
+  }
+}
