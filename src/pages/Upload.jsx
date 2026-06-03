@@ -4,6 +4,7 @@ import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import { parseAgreement } from '../services/claude'
 import { createAgreement, insertAssets } from '../services/supabase'
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
 
 const LOADING_STEPS = [
   'Reading your agreement…',
@@ -14,9 +15,7 @@ const LOADING_STEPS = [
 
 async function extractTextFromPdf(file) {
   const pdfjsLib = await import('pdfjs-dist')
-  // CDN worker — works on all browsers including mobile Safari in production
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
 
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
