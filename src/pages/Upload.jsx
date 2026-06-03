@@ -4,8 +4,6 @@ import TopAppBar from '../components/TopAppBar'
 import ProgressStepper from '../components/ProgressStepper'
 import { parseAgreement } from '../services/claude'
 import { createAgreement, insertAssets } from '../services/supabase'
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-
 const LOADING_STEPS = [
   'Reading your agreement…',
   'Checking for compliance issues…',
@@ -13,11 +11,22 @@ const LOADING_STEPS = [
   'Almost done…',
 ]
 
+// FileReader-based buffer — works on all mobile browsers including old iOS/Android
+function readFileAsArrayBuffer(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = () => reject(new Error('Could not read file'))
+    reader.readAsArrayBuffer(file)
+  })
+}
+
 async function extractTextFromPdf(file) {
   const pdfjsLib = await import('pdfjs-dist')
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl
+  // Disable Web Worker entirely — runs in main thread, works on all mobile browsers
+  pdfjsLib.GlobalWorkerOptions.workerSrc = ''
 
-  const arrayBuffer = await file.arrayBuffer()
+  const arrayBuffer = await readFileAsArrayBuffer(file)
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const pages = []
   for (let i = 1; i <= pdf.numPages; i++) {
